@@ -332,7 +332,7 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
                 )
                 wifiHandler.postDelayed(this, 500)
             }
-        }, 50)
+        }, 500)
     }
 
     private fun setStatus(colorHex: String, title: String, sub: String) {
