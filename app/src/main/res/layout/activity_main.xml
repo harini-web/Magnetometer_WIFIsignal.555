@@ -3,7 +3,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="#F5F5F5"
+    android:background="#121212"
     android:padding="16dp">
 
     <LinearLayout
@@ -11,37 +11,47 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="20dp"
-        android:background="#4CAF50"
+        android:padding="24dp"
+        android:background="#2E7D32"
         android:gravity="center"
-        android:elevation="6dp">
+        android:elevation="8dp">
 
         <TextView
             android:id="@+id/tvMainStatus"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="SYSTEM READY"
-            android:textSize="24sp"
+            android:text="SECURE SPACE"
+            android:textSize="28sp"
             android:textStyle="bold"
-            android:textColor="#FFFFFF"/>
+            android:textColor="#FFFFFF"
+            android:letterSpacing="0.1"/>
 
         <TextView
             android:id="@+id/tvSubStatus"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Select mode to begin"
+            android:text="System Idle"
             android:textColor="#E8F5E9"
             android:textSize="14sp"
+            android:textAllCaps="true"
             android:layout_marginTop="4dp"/>
     </LinearLayout>
 
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="MAGNETIC FLUX MONITOR"
+        android:textColor="#757575"
+        android:textSize="12sp"
+        android:layout_marginTop="24dp"
+        android:layout_marginBottom="8dp"/>
+
     <FrameLayout
         android:layout_width="match_parent"
-        android:layout_height="140dp"
-        android:layout_marginTop="12dp"
-        android:background="#FFFFFF"
-        android:elevation="4dp"
-        android:padding="4dp">
+        android:layout_height="160dp"
+        android:background="#1E1E1E"
+        android:padding="1dp">
+
         <com.example.magnetometerwifisignal.SimpleGraphView
             android:id="@+id/graphView"
             android:layout_width="match_parent"
@@ -52,18 +62,26 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:columnCount="2"
-        android:layout_marginTop="12dp"
+        android:layout_marginTop="16dp"
         android:alignmentMode="alignMargins">
 
-        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
-            android:layout_columnWeight="1" android:orientation="vertical"
-            android:background="#FFFFFF" android:elevation="2dp"
-            android:padding="12dp" android:layout_margin="4dp">
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:orientation="vertical"
+            android:background="#1E1E1E"
+            android:padding="16dp"
+            android:layout_marginEnd="8dp"
+            android:layout_marginBottom="8dp">
+
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="MAGNETIC"
-                android:textSize="10sp"/>
+                android:textSize="10sp"
+                android:textColor="#AAA"/>
+
             <TextView
                 android:id="@+id/tvMag"
                 android:layout_width="wrap_content"
@@ -71,56 +89,80 @@
                 android:text="0 µT"
                 android:textSize="18sp"
                 android:textStyle="bold"
-                android:textColor="#000"/>
+                android:textColor="#FFF"/>
         </LinearLayout>
 
-        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
-            android:layout_columnWeight="1" android:orientation="vertical"
-            android:background="#FFFFFF" android:elevation="2dp"
-            android:padding="12dp" android:layout_margin="4dp">
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:orientation="vertical"
+            android:background="#1E1E1E"
+            android:padding="16dp"
+            android:layout_marginStart="8dp"
+            android:layout_marginBottom="8dp">
+
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="SONAR / DOPPLER"
-                android:textSize="10sp"/>
+                android:text="LIVE WIRE (HUM)"
+                android:textSize="10sp"
+                android:textColor="#AAA"/>
+
             <TextView
-                android:id="@+id/tvSonar"
+                android:id="@+id/tvHum"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Quiet"
+                android:text="0.0"
                 android:textSize="18sp"
                 android:textStyle="bold"
-                android:textColor="#000"/>
+                android:textColor="#FFF"/>
         </LinearLayout>
 
-        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
-            android:layout_columnWeight="1" android:orientation="vertical"
-            android:background="#FFFFFF" android:elevation="2dp"
-            android:padding="12dp" android:layout_margin="4dp">
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:orientation="vertical"
+            android:background="#1E1E1E"
+            android:padding="16dp"
+            android:layout_marginEnd="8dp"
+            android:layout_marginBottom="8dp">
+
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="WIFI"
-                android:textSize="10sp"/>
+                android:text="WIFI DENSITY"
+                android:textSize="10sp"
+                android:textColor="#AAA"/>
+
             <TextView
                 android:id="@+id/tvWifi"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="0 dBm"
-                android:textSize="18sp"
+                android:text="Scanning..."
+                android:textSize="14sp"
                 android:textStyle="bold"
-                android:textColor="#000"/>
+                android:textColor="#FFF"/>
         </LinearLayout>
 
-        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
-            android:layout_columnWeight="1" android:orientation="vertical"
-            android:background="#FFFFFF" android:elevation="2dp"
-            android:padding="12dp" android:layout_margin="4dp">
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:orientation="vertical"
+            android:background="#1E1E1E"
+            android:padding="16dp"
+            android:layout_marginStart="8dp"
+            android:layout_marginBottom="8dp">
+
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="LIGHT"
-                android:textSize="10sp"/>
+                android:text="LIGHT (LUX)"
+                android:textSize="10sp"
+                android:textColor="#AAA"/>
+
             <TextView
                 android:id="@+id/tvLight"
                 android:layout_width="wrap_content"
@@ -128,56 +170,63 @@
                 android:text="0 lx"
                 android:textSize="18sp"
                 android:textStyle="bold"
-                android:textColor="#000"/>
+                android:textColor="#FFF"/>
         </LinearLayout>
     </GridLayout>
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="0dp"
+        android:layout_weight="1"
         android:orientation="vertical"
-        android:layout_marginTop="16dp">
+        android:gravity="bottom">
+
+        <Switch
+            android:id="@+id/swSentryMode"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="SENTRY MODE (Intrusion Alarm)"
+            android:textColor="#FFFFFF"
+            android:padding="12dp"
+            android:layout_marginBottom="16dp"/>
 
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="60dp"
             android:orientation="horizontal">
+
             <Button
                 android:id="@+id/btnStart"
                 android:layout_width="0dp"
                 android:layout_weight="1"
-                android:layout_height="wrap_content"
-                android:text="Start"
-                android:backgroundTint="#2196F3"
-                android:layout_marginEnd="4dp"/>
+                android:layout_height="match_parent"
+                android:text="ACTIVATE"
+                android:backgroundTint="#2E7D32"
+                android:textColor="#FFF"
+                android:textStyle="bold"
+                android:layout_marginEnd="8dp"/>
+
             <Button
                 android:id="@+id/btnStop"
                 android:layout_width="0dp"
                 android:layout_weight="1"
-                android:layout_height="wrap_content"
-                android:text="Stop"
-                android:backgroundTint="#F44336"
-                android:layout_marginStart="4dp"/>
+                android:layout_height="match_parent"
+                android:text="DEACTIVATE"
+                android:backgroundTint="#C62828"
+                android:textColor="#FFF"
+                android:textStyle="bold"
+                android:layout_marginStart="8dp"/>
         </LinearLayout>
 
-        <Switch
-            android:id="@+id/swPersonMode"
+        <TextView
+            android:id="@+id/tvLog"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:text="Enable Person Detection (Beta)"
-            android:textSize="14sp"
-            android:checked="false"
-            android:padding="8dp"/>
+            android:text="> Ready"
+            android:textColor="#666"
+            android:textSize="10sp"
+            android:fontFamily="monospace"
+            android:layout_marginTop="8dp"/>
     </LinearLayout>
 
-    <TextView
-        android:id="@+id/tvLog"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:layout_marginTop="8dp"
-        android:text="> Ready."
-        android:fontFamily="monospace"
-        android:textSize="11sp"/>
 </LinearLayout>

@@ -1,7 +1,10 @@
 package com.example.magnetometerwifisignal
 
 import android.Manifest
+import android.content.BroadcastReceiver
 import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.graphics.Color
 import android.hardware.Sensor
@@ -9,9 +12,12 @@ import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import android.net.wifi.WifiManager
+import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.os.VibrationEffect
+import android.os.Vibrator
 import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.Switch
@@ -19,32 +25,162 @@ import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import kotlin.math.abs
+import kotlin.math.pow
 import kotlin.math.sqrt
+
+// --- FUSION LOGIC CLASSES ---
+data class FusionResult(
+    val mainStatus: String,
+    val subStatus: String,
+    val colorHex: String,
+    val debugTags: String,
+    val vibrationLevel: Int
+)
+
+class FusionEngine {
+    private val HISTORY_SIZE = 20
+    private val THRESHOLD_STATIONARY = 0.05f
+
+    var baseMag = 0f; var baseWifi = 0f
+    var noiseWifi = 1.0f
+
+    var smoothMag = 0f; var smoothWifi = 0f; var smoothLight = 0f
+    var acHumScore = 0f; var linearMotion = 0f; var angularMotion = 0f
+    var visibleNetworkCount = 0
+    var isSentryModeEnabled = false
+
+    private val wifiHistory = FloatArray(HISTORY_SIZE)
+    private val lightHistory = FloatArray(HISTORY_SIZE)
+    private var historyIndex = 0
+
+    fun updateData(mag: Float, wifi: Float, light: Float, acHum: Float, linear: Float, angular: Float, netCount: Int) {
+        smoothMag = mag; smoothWifi = wifi; smoothLight = light
+        acHumScore = acHum; linearMotion = linear; angularMotion = angular
+        visibleNetworkCount = netCount
+        historyIndex = (historyIndex + 1) % HISTORY_SIZE
+        wifiHistory[historyIndex] = smoothWifi
+        lightHistory[historyIndex] = smoothLight
+    }
+
+    fun calibrate(samples: Int) {
+        if (samples == 1) { baseMag = smoothMag; baseWifi = smoothWifi }
+        else {
+            baseMag = (baseMag * (samples - 1) + smoothMag) / samples
+            baseWifi = (baseWifi * (samples - 1) + smoothWifi) / samples
+        }
+        if (samples > 10) {
+            val wVar = calculateStdDev(wifiHistory)
+            if (wVar > 0) noiseWifi = (noiseWifi * 0.9f + wVar * 0.1f)
+        }
+    }
+
+    fun analyze(): FusionResult {
+        val tags = mutableListOf<String>()
+        val isStationary = linearMotion < THRESHOLD_STATIONARY && angularMotion < THRESHOLD_STATIONARY
+
+        val magDiff = abs(smoothMag - baseMag)
+        val wifiVar = calculateStdDev(wifiHistory)
+        val lightVar = calculateStdDev(lightHistory)
+        val wifiDrop = baseWifi - smoothWifi
+
+        // Crowd Density Labeling
+        var densityScore = 0
+        if (visibleNetworkCount > 5) densityScore++
+        if (visibleNetworkCount > 15) densityScore++
+        if (visibleNetworkCount > 30) densityScore++
+        if (isStationary && wifiVar > 2.0f) densityScore++
+
+        val densityLabel = when (densityScore) {
+            0, 1 -> "Low"
+            2, 3 -> "Moderate"
+            else -> "Congested"
+        }
+        tags.add("APs:$visibleNetworkCount")
+
+        // 1. SENTRY MODE (Intrusion Detection)
+        if (isSentryModeEnabled) {
+            if (!isStationary) return FusionResult("SENTRY ALERT", "Device Moving - Put Down", "#FF9800", "Stabilize Device", 0)
+
+            // Trigger: WiFi Scatter OR Light Shadows
+            if ((wifiVar > noiseWifi * 3.0f && wifiVar > 1.5f) || lightVar > 4.0f) {
+                return FusionResult("INTRUSION DETECTED", "Motion (Shadows/Signal)", "#E040FB", "Var:${"%.1f".format(wifiVar)}", 255)
+            }
+            // Trigger: Signal Blocked
+            if (wifiDrop > 5.0f && wifiVar < 2.0f) {
+                return FusionResult("INTRUSION DETECTED", "Signal Line Blocked", "#AA00FF", "Drop: ${"%.1f".format(wifiDrop)}dB", 100)
+            }
+        }
+
+        // 2. SWEEP MODE (Counter-Surveillance)
+        // Live Wire (AC Hum)
+        if (magDiff > 3.0f && acHumScore > 1.0f) {
+            val intensity = (magDiff * 5).toInt().coerceIn(50, 255)
+            return FusionResult("THREAT DETECTED", "Live Electronics (AC Hum)", "#D32F2F", "Jitter: ${"%.1f".format(acHumScore)}", intensity)
+        }
+        // Ferrous Metal
+        if (magDiff > 15.0f) {
+            val intensity = (magDiff * 2).toInt().coerceIn(30, 150)
+            return FusionResult("MAGNETIC SOURCE", "Ferrous Metal Detected", "#F44336", "Mag++", intensity)
+        }
+
+        return FusionResult("SECURE", "Density: $densityLabel", "#2E7D32", if(isSentryModeEnabled) "Sentry Active" else "Scanning...", 0)
+    }
+
+    private fun calculateStdDev(data: FloatArray): Float {
+        val mean = data.average().toFloat()
+        var sumSq = 0.0f
+        var count = 0
+        for (f in data) { if (f != 0f) { sumSq += (f - mean).pow(2); count++ } }
+        return if (count > 0) sqrt(sumSq / count) else 0f
+    }
+}
+
+// --- MAIN ACTIVITY ---
 
 class MainActivity : AppCompatActivity(), SensorEventListener {
 
     private lateinit var sensorManager: SensorManager
     private lateinit var wifiManager: WifiManager
+    private lateinit var vibrator: Vibrator
 
-    // UI
     private lateinit var cardStatus: LinearLayout
     private lateinit var tvMainStatus: TextView
     private lateinit var tvSubStatus: TextView
     private lateinit var tvMag: TextView
     private lateinit var tvWifi: TextView
     private lateinit var tvLight: TextView
-    private lateinit var tvSonar: TextView
-    private lateinit var tvTags: TextView
+    private lateinit var tvHum: TextView
+    private lateinit var tvLog: TextView
     private lateinit var graphView: SimpleGraphView
-    private lateinit var swPersonMode: Switch
+    private lateinit var swSentryMode: Switch
 
     private val fusionEngine = FusionEngine()
-    private var activeSonar: ActiveSonar? = null
-
     private var isLogging = false
     private val calibrationSamples = 50
     private var sampleCount = 0
     private var lastUiUpdate = 0L
+
+    // AC Hum Calc
+    private val magHistory = FloatArray(10)
+    private var magIndex = 0
+
+    // WiFi
+    private var currentWifiCount = 0
+    private var isReceiverRegistered = false
+
+    private val wifiScanReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            if (!isLogging) return
+            val success = intent?.getBooleanExtra(WifiManager.EXTRA_RESULTS_UPDATED, false) ?: false
+            if (success) {
+                try {
+                    if (ContextCompat.checkSelfPermission(context!!, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+                        currentWifiCount = wifiManager.scanResults.size
+                    }
+                } catch (e: Exception) { e.printStackTrace() }
+            }
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -57,32 +193,18 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         tvMag = findViewById(R.id.tvMag)
         tvWifi = findViewById(R.id.tvWifi)
         tvLight = findViewById(R.id.tvLight)
-        tvSonar = findViewById(R.id.tvSonar)
-        tvTags = findViewById(R.id.tvLog)
+        tvHum = findViewById(R.id.tvHum)
+        tvLog = findViewById(R.id.tvLog)
         graphView = findViewById(R.id.graphView)
-        swPersonMode = findViewById(R.id.swPersonMode)
+        swSentryMode = findViewById(R.id.swSentryMode)
 
         sensorManager = getSystemService(Context.SENSOR_SERVICE) as SensorManager
         wifiManager = applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
+        vibrator = getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
 
-        // Setup Sonar (Now with Doppler)
-        activeSonar = ActiveSonar { result ->
-            // Pass full result to engine
-            fusionEngine.smoothSonar = result.amplitude
-            fusionEngine.dopplerDir = result.dopplerShift
-
-            runOnUiThread {
-                var text = "Amp: ${result.amplitude.toInt()}"
-                if (result.dopplerShift == 1) text += " [Near]"
-                if (result.dopplerShift == -1) text += " [Far]"
-                tvSonar.text = text
-            }
-        }
-
-        // Setup Switch
-        swPersonMode.setOnCheckedChangeListener { _, isChecked ->
-            fusionEngine.isPersonModeEnabled = isChecked
-            tvTags.text = "> Mode changed: Person Detect = $isChecked"
+        swSentryMode.setOnCheckedChangeListener { _, isChecked ->
+            fusionEngine.isSentryModeEnabled = isChecked
+            tvLog.text = "> Mode switched: ${if(isChecked) "SENTRY (Intrusion)" else "SWEEP (Counter-Surveillance)"}"
         }
 
         findViewById<Button>(R.id.btnStart).setOnClickListener { startFusion() }
@@ -91,10 +213,9 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
 
     private fun startFusion() {
         if (isLogging) return
-        if (!checkPermissions()) return
-
         isLogging = true
         sampleCount = 0
+        magIndex = 0
 
         val delay = SensorManager.SENSOR_DELAY_GAME
         sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD)?.let { sensorManager.registerListener(this, it, delay) }
@@ -103,17 +224,20 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         sensorManager.getDefaultSensor(Sensor.TYPE_LIGHT)?.let { sensorManager.registerListener(this, it, SensorManager.SENSOR_DELAY_UI) }
 
         startWifiPoll()
-        activeSonar?.start()
-
+        registerWifiReceiver()
         setStatus("#FFC107", "CALIBRATING", "Hold still...")
     }
 
     private fun stopFusion() {
         isLogging = false
         sensorManager.unregisterListener(this)
-        activeSonar?.stop()
         wifiHandler.removeCallbacksAndMessages(null)
-        setStatus("#9E9E9E", "IDLE", "System Stopped")
+        vibrator.cancel()
+        if (isReceiverRegistered) {
+            unregisterReceiver(wifiScanReceiver)
+            isReceiverRegistered = false
+        }
+        setStatus("#9E9E9E", "SYSTEM IDLE", "Services Stopped")
     }
 
     override fun onSensorChanged(event: SensorEvent?) {
@@ -122,8 +246,15 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         when (event.sensor.type) {
             Sensor.TYPE_MAGNETIC_FIELD -> {
                 val mag = sqrt(event.values[0]*event.values[0] + event.values[1]*event.values[1] + event.values[2]*event.values[2])
-                val smoothMag = (fusionEngine.smoothMag * 0.9f) + (mag * 0.1f)
-                fusionEngine.smoothMag = smoothMag
+
+                // AC Hum Jitter Calc
+                magIndex = (magIndex + 1) % magHistory.size
+                magHistory[magIndex] = mag
+                val min = magHistory.minOrNull() ?: 0f
+                val max = magHistory.maxOrNull() ?: 0f
+                fusionEngine.acHumScore = max - min
+
+                fusionEngine.smoothMag = (fusionEngine.smoothMag * 0.9f) + (mag * 0.1f)
                 processFrame()
             }
             Sensor.TYPE_ACCELEROMETER -> {
@@ -148,16 +279,37 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
             lastUiUpdate = now
             graphView.addPoint(fusionEngine.smoothMag)
             tvMag.text = "%.1f µT".format(fusionEngine.smoothMag)
+            tvHum.text = "%.2f".format(fusionEngine.acHumScore)
         }
 
         if (sampleCount < calibrationSamples) {
             sampleCount++
-            fusionEngine.calibrate(sampleCount, calibrationSamples)
-            if (sampleCount == calibrationSamples) setStatus("#4CAF50", "SCANNING", "Baselines Locked")
+            fusionEngine.calibrate(sampleCount)
+            if (sampleCount == calibrationSamples) setStatus("#2E7D32", "SECURE", "Environment Learned")
         } else {
             val result = fusionEngine.analyze()
             setStatus(result.colorHex, result.mainStatus, result.subStatus)
-            runOnUiThread { tvTags.text = "INFO: ${result.debugTags}" }
+
+            if (now - lastUiUpdate < 150) {
+                tvLog.text = "> DEBUG: ${result.debugTags}"
+            }
+            if (result.vibrationLevel > 0) playHaptic(result.vibrationLevel)
+        }
+    }
+
+    private fun playHaptic(intensity: Int) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            vibrator.vibrate(VibrationEffect.createOneShot(50, intensity))
+        } else {
+            vibrator.vibrate(50)
+        }
+    }
+
+    private fun registerWifiReceiver() {
+        if (!isReceiverRegistered) {
+            registerReceiver(wifiScanReceiver, IntentFilter(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION))
+            isReceiverRegistered = true
+            wifiManager.startScan()
         }
     }
 
@@ -170,6 +322,14 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
                 val smooth = (fusionEngine.smoothWifi * 0.8f) + (rssi * 0.2f)
                 fusionEngine.smoothWifi = smooth
                 tvWifi.text = "${smooth.toInt()} dBm"
+
+                if (System.currentTimeMillis() % 10000 < 500) wifiManager.startScan()
+
+                fusionEngine.updateData(
+                    fusionEngine.smoothMag, fusionEngine.smoothWifi, fusionEngine.smoothLight,
+                    fusionEngine.acHumScore, fusionEngine.linearMotion, fusionEngine.angularMotion,
+                    currentWifiCount
+                )
                 wifiHandler.postDelayed(this, 500)
             }
         }, 500)
@@ -183,14 +343,5 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         }
     }
 
-    private fun checkPermissions(): Boolean {
-        val perms = arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.RECORD_AUDIO)
-        val missing = perms.filter { ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED }
-        if (missing.isNotEmpty()) {
-            requestPermissions(missing.toTypedArray(), 101)
-            return false
-        }
-        return true
-    }
     override fun onAccuracyChanged(s: Sensor?, a: Int) {}
 }
