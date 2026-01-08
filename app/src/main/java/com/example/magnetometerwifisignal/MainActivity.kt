@@ -3,7 +3,6 @@ package com.example.magnetometerwifisignal
 import android.Manifest
 import android.content.BroadcastReceiver
 import android.content.Context
-import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.graphics.Color
@@ -27,7 +26,7 @@ import androidx.core.content.ContextCompat
 import kotlin.math.abs
 import kotlin.math.pow
 import kotlin.math.sqrt
-
+import android.content.Intent
 // --- FUSION LOGIC CLASSES ---
 data class FusionResult(
     val mainStatus: String,
