@@ -1,11 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:background="#121212"
     android:padding="16dp">
 
+    <!-- Status Card -->
     <LinearLayout
         android:id="@+id/cardStatus"
         android:layout_width="match_parent"
@@ -46,6 +48,7 @@
         android:layout_marginTop="24dp"
         android:layout_marginBottom="8dp"/>
 
+    <!-- Graph -->
     <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="160dp"
@@ -58,6 +61,7 @@
             android:layout_height="match_parent" />
     </FrameLayout>
 
+    <!-- Metrics Grid -->
     <GridLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -65,6 +69,7 @@
         android:layout_marginTop="16dp"
         android:alignmentMode="alignMargins">
 
+        <!-- MAGNETIC -->
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
@@ -92,6 +97,7 @@
                 android:textColor="#FFF"/>
         </LinearLayout>
 
+        <!-- LIVE WIRE (HUM) -->
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
@@ -119,6 +125,7 @@
                 android:textColor="#FFF"/>
         </LinearLayout>
 
+        <!-- WIFI DENSITY -->
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
@@ -146,6 +153,7 @@
                 android:textColor="#FFF"/>
         </LinearLayout>
 
+        <!-- LIGHT (LUX) -->
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
@@ -174,6 +182,7 @@
         </LinearLayout>
     </GridLayout>
 
+    <!-- BOTTOM SECTION -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
@@ -218,6 +227,21 @@
                 android:layout_marginStart="8dp"/>
         </LinearLayout>
 
+        <!--LOGS BUTTON -->
+        <Button
+            android:id="@+id/btnLogs"
+            android:layout_width="wrap_content"
+            android:layout_height="56dp"
+            android:layout_gravity="bottom|end"
+            android:layout_marginBottom="24dp"
+            android:layout_marginEnd="16dp"
+            android:text=" LOGS"
+            android:backgroundTint="#2196F3"
+            android:textColor="#FFFFFF"
+            android:textStyle="bold"
+            android:textSize="14sp"
+            android:elevation="8dp"/>
+
         <TextView
             android:id="@+id/tvLog"
             android:layout_width="match_parent"
@@ -228,5 +252,4 @@
             android:fontFamily="monospace"
             android:layout_marginTop="8dp"/>
     </LinearLayout>
-
 </LinearLayout>

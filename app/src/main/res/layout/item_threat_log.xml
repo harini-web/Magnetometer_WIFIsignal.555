@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="#2A2A2A"
+    android:padding="16dp"
+    android:layout_margin="4dp">
+
+    <!-- Header Row -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/tvThreatTime"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="10:35:23"
+            android:textColor="#FF9800"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:layout_marginEnd="12dp"/>
+
+        <TextView
+            android:id="@+id/tvThreatType"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="INTRUSION DETECTED"
+            android:textColor="#FF4444"
+            android:textSize="16sp"
+            android:textStyle="bold"/>
+
+        <TextView
+            android:id="@+id/tvThreatSeverity"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="HIGH"
+            android:textColor="#FF1744"
+            android:textSize="12sp"
+            android:background="#FF5722"
+            android:paddingHorizontal="8dp"
+            android:paddingVertical="2dp"/>
+    </LinearLayout>
+
+    <!-- Details -->
+    <TextView
+        android:id="@+id/tvThreatDetails"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:text="Signal blocked + light variance detected"
+        android:textColor="#E0E0E0"
+        android:textSize="14sp"/>
+
+    <!-- Metrics -->
+    <TextView
+        android:id="@+id/tvThreatMetrics"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:text="Mag:+12μT | WiFi:-8dB | Light:45lx"
+        android:textColor="#888"
+        android:textSize="12sp"
+        android:fontFamily="monospace"/>
+</LinearLayout>
